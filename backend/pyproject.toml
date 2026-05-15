@@ -1,0 +1,20 @@
+[project]
+name = "meeting-intelligence-api"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "asyncpg==0.30.0",
+    "openai==1.58.1",
+    "pinecone==5.4.2",
+    "python-multipart==0.0.20",
+    "python-dotenv==1.0.1",
+    "pydantic-settings==2.7.1",
+    "httpx==0.28.1",
+    "pyjwt==2.10.1",
+    "bcrypt==4.2.1",
+    "email-validator==2.2.0",
+    "pypdf==5.1.0",
+    "python-docx==1.1.2",
+]
