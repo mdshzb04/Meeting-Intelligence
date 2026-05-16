@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+import { backendApiUrl } from "@/lib/server-backend-url";
 
 export async function GET() {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/health`, { cache: "no-store" });
+    const res = await fetch(backendApiUrl("/api/health"), { cache: "no-store" });
     const data = await res.json();
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ status: "unhealthy", error: "Backend unreachable" }, { status: 503 });
+    return NextResponse.json(data, { status: res.status });
+  } catch (err) {
+    console.error("Health proxy failed:", err);
+    return NextResponse.json({ error: "Backend unavailable" }, { status: 503 });
   }
 }

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
+import { backendApiUrl, getServerBackendUrl } from "@/lib/server-backend-url";
 
-export const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+export { getServerBackendUrl };
 
 export function backendHeaders(request: NextRequest): HeadersInit {
   const auth = request.headers.get("authorization");
@@ -12,7 +13,7 @@ export function backendFetch(
   path: string,
   init?: RequestInit
 ) {
-  return fetch(`${BACKEND_URL}${path}`, {
+  return fetch(backendApiUrl(path), {
     ...init,
     headers: {
       ...backendHeaders(request),
