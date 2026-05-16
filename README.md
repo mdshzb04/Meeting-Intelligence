@@ -86,7 +86,7 @@ psql "YOUR_DATABASE_URL" -f backend/schema.sql
 3. Copy your API key to `PINECONE_API_KEY` in `.env`
 
 ### 4. Start the backend
-
+//cd backend && ./run-dev.sh
 ```bash
 cd backend
 python -m venv venv
