@@ -1,7 +1,9 @@
 """Knowledge base API — document upload, list, delete, and RAG chat."""
 
+import hashlib
 import logging
 from pathlib import Path
+from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, BackgroundTasks
 
@@ -100,6 +102,67 @@ async def upload_knowledge_document(
     )
 
     return _format_document(doc)
+
+
+@router.post("/knowledge/documents/batch", status_code=202)
+async def upload_knowledge_documents_batch(
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    user: dict = Depends(get_current_user),
+    pool=Depends(get_db),
+):
+    """Accept multiple files; skip exact duplicates (same filename+hash)."""
+    settings = get_settings()
+    results = []
+
+    existing_rows = await knowledge_repo.list_documents(pool, user["id"])
+    existing_hashes: set[str] = set()
+    for row in existing_rows:
+        h = row.get("content_hash") or ""
+        if h:
+            existing_hashes.add(h)
+
+    for file in files:
+        if not file.filename:
+            results.append({"filename": "?", "status": "skipped", "reason": "no filename"})
+            continue
+
+        try:
+            content = await file.read()
+            ext = validate_knowledge_file(file.filename, len(content), settings.MAX_UPLOAD_SIZE_MB)
+        except Exception as exc:
+            results.append({"filename": file.filename, "status": "error", "reason": str(exc)})
+            continue
+
+        content_hash = hashlib.sha256(content).hexdigest()
+        if content_hash in existing_hashes:
+            results.append({"filename": file.filename, "status": "duplicate", "reason": "already indexed"})
+            continue
+        existing_hashes.add(content_hash)
+
+        try:
+            text = extract_text(file.filename, content)
+        except Exception as exc:
+            results.append({"filename": file.filename, "status": "error", "reason": str(exc)})
+            continue
+
+        doc_title = Path(file.filename).stem.strip() or "Untitled"
+        doc = await knowledge_repo.create_document(
+            pool,
+            user["id"],
+            title=doc_title,
+            filename=file.filename,
+            file_type=ext.lstrip("."),
+            status="processing",
+        )
+        background_tasks.add_task(
+            process_knowledge_document, str(doc["id"]), user["id"], text
+        )
+        results.append({"filename": file.filename, "status": "queued", "document_id": str(doc["id"])})
+
+    queued = sum(1 for r in results if r["status"] == "queued")
+    logger.info("Batch upload: %d queued, user=%s", queued, user["id"])
+    return {"results": results, "queued": queued}
 
 
 @router.get("/knowledge/documents", response_model=KnowledgeDocumentListResponse)

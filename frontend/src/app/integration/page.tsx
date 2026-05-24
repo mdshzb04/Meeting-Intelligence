@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Mail, CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+
+const EMAIL_EVENTS = [
+  { label: "Welcome email", desc: "Sent when you create your account" },
+  { label: "Meeting processed", desc: "Sent when AI analysis completes" },
+  { label: "Transcript ready", desc: "Sent after audio transcription finishes" },
+  { label: "Meeting shared", desc: "Sent when someone shares a meeting with you" },
+  { label: "Workspace invitation", desc: "Sent when you're invited to a workspace" },
+];
 
 export default function IntegrationPage() {
   const queryClient = useQueryClient();
@@ -52,12 +60,13 @@ export default function IntegrationPage() {
   return (
     <div className="space-y-8 max-w-lg">
       <div>
-        <h1 className="heading-lg">Integration</h1>
+        <h1 className="heading-lg">Integrations</h1>
         <p className="text-[13px] text-muted-foreground mt-1">
-          Connect Slack to get notified when meetings finish processing.
+          Connect tools and manage notifications for your workspace.
         </p>
       </div>
 
+      {/* ── Slack ── */}
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div>
           <h2 className="text-[14px] font-medium text-foreground">Slack</h2>
@@ -122,6 +131,40 @@ export default function IntegrationPage() {
             </>
           )}
         </div>
+      </section>
+
+      {/* ── Email Notifications ── */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" />
+              <h2 className="text-[14px] font-medium text-foreground">Email Notifications</h2>
+            </div>
+            <p className="text-[12px] text-muted-foreground mt-1">
+              Transactional emails are sent automatically to your account email.
+              No configuration needed.
+            </p>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-medium px-2.5 py-1 border border-emerald-500/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Active
+          </span>
+        </div>
+
+        <ul className="space-y-2.5">
+          {EMAIL_EVENTS.map((ev) => (
+            <li key={ev.label} className="flex items-start gap-3">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[13px] text-foreground font-medium">{ev.label}</p>
+                <p className="text-[12px] text-muted-foreground">{ev.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+
       </section>
     </div>
   );

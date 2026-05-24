@@ -9,7 +9,7 @@ from app.exceptions import ValidationError
 logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx"}
-MAX_EXTRACT_CHARS = 500_000
+MAX_EXTRACT_CHARS = 2_000_000  # ~2M chars supports large PDFs/reports
 
 
 def validate_knowledge_file(filename: str, size_bytes: int, max_mb: int) -> str:

@@ -1,5 +1,6 @@
 """Application configuration via environment variables."""
 
+from typing import Optional
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
 
     # App settings
-    MAX_UPLOAD_SIZE_MB: int = 25
+    MAX_UPLOAD_SIZE_MB: int = 100
     CHUNK_SIZE_TOKENS: int = 500
     CHUNK_OVERLAP_TOKENS: int = 50
 
@@ -33,6 +34,10 @@ class Settings(BaseSettings):
 
     JWT_SECRET: str = "change-me-in-production"
     JWT_EXPIRE_HOURS: int = 168
+
+    # Resend transactional email (optional — emails are skipped when unset)
+    RESEND_API_KEY: Optional[str] = None
+    EMAIL_FROM: str = "MeetingMind <onboarding@resend.dev>"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

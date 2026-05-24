@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
     "127.0.0.1",
     "192.168.0.107",
   ],
+  // Raise body size limit for large audio (100MB) and multi-doc batch uploads
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "110mb",
+    },
+  },
 };
 
 export default nextConfig;

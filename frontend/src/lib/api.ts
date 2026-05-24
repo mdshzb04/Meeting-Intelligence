@@ -292,6 +292,15 @@ export const api = {
       method: "DELETE",
     }),
 
+  uploadKnowledgeDocumentsBatch: (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files", f));
+    return apiFetch<{ results: { filename: string; status: string; reason?: string; document_id?: string }[]; queued: number }>(
+      "/api/knowledge/documents/batch",
+      { method: "POST", body: formData }
+    );
+  },
+
   sendKnowledgeChatMessage: (content: string) =>
     apiFetch<KnowledgeChatMessage>("/api/knowledge/chat", {
       method: "POST",
