@@ -20,7 +20,7 @@ from app.schemas.knowledge import (
     KnowledgeChatHistoryResponse,
     KnowledgeCitation,
 )
-from app.services.document_parser import validate_knowledge_file, extract_text
+from app.services.document_parser import validate_knowledge_file, extract_text, is_audio_file
 from app.services.knowledge_processor import (
     process_knowledge_document,
     delete_knowledge_index,
@@ -86,6 +86,24 @@ async def upload_knowledge_document(
 
     doc_title = (title or Path(file.filename).stem).strip() or "Untitled"
     file_type = ext.lstrip(".")
+
+    if is_audio_file(file.filename):
+        # Route MP3 to audio meeting pipeline
+        from app.repositories import meetings as meetings_repo
+        from app.services.meeting_processor import process_audio_meeting
+        meeting = await meetings_repo.create_meeting(
+            pool, user["id"],
+            title=doc_title,
+            status="processing",
+            audio_filename=file.filename,
+        )
+        background_tasks.add_task(
+            process_audio_meeting, str(meeting["id"]), content, file.filename, title=doc_title or None
+        )
+        return {"id": str(meeting["id"]), "title": doc_title, "filename": file.filename,
+                "file_type": "mp3", "status": "processing", "chunk_count": 0,
+                "error_message": None, "created_at": meeting["created_at"],
+                "updated_at": meeting["updated_at"]}
 
     doc = await knowledge_repo.create_document(
         pool,

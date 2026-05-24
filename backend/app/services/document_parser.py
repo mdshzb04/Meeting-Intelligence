@@ -2,13 +2,15 @@
 
 import io
 import logging
+import zipfile
 from pathlib import Path
 
 from app.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx"}
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".mp3", ".zip"}
+AUDIO_EXTENSIONS = {".mp3"}
 MAX_EXTRACT_CHARS = 2_000_000  # ~2M chars supports large PDFs/reports
 
 
@@ -23,6 +25,10 @@ def validate_knowledge_file(filename: str, size_bytes: int, max_mb: int) -> str:
     return ext
 
 
+def is_audio_file(filename: str) -> bool:
+    return Path(filename).suffix.lower() in AUDIO_EXTENSIONS
+
+
 def extract_text(filename: str, content: bytes) -> str:
     ext = Path(filename).suffix.lower()
     if ext in (".txt", ".md"):
@@ -31,6 +37,8 @@ def extract_text(filename: str, content: bytes) -> str:
         text = _extract_pdf(content)
     elif ext == ".docx":
         text = _extract_docx(content)
+    elif ext == ".zip":
+        text = _extract_zip(content)
     else:
         raise ValidationError("Unsupported file type")
 
@@ -58,3 +66,25 @@ def _extract_docx(content: bytes) -> str:
 
     doc = Document(io.BytesIO(content))
     return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+
+def _extract_zip(content: bytes) -> str:
+    """Extract text from all readable files inside a ZIP archive."""
+    INNER_ALLOWED = {".pdf", ".txt", ".md", ".docx"}
+    parts: list[str] = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as zf:
+            for name in zf.namelist():
+                ext = Path(name).suffix.lower()
+                if ext not in INNER_ALLOWED:
+                    continue
+                try:
+                    inner = zf.read(name)
+                    parts.append(f"=== {name} ===\n{extract_text(name, inner)}")
+                except Exception as e:
+                    logger.warning("ZIP: skipped %s — %s", name, e)
+    except zipfile.BadZipFile:
+        raise ValidationError("Invalid or corrupt ZIP file")
+    if not parts:
+        raise ValidationError("ZIP contains no readable documents (PDF, TXT, MD, DOCX)")
+    return "\n\n".join(parts)

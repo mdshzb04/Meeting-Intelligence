@@ -310,6 +310,21 @@ export const api = {
   getKnowledgeChatHistory: () =>
     apiFetch<KnowledgeChatHistory>("/api/knowledge/chat"),
 
+  // Global workspace chat
+  globalChat: (content: string, mode: "meetings" | "knowledge" | "everything" = "everything") =>
+    apiFetch<{ answer: string; citations: Record<string, unknown>[]; mode: string }>(
+      "/api/workspace/global-chat",
+      { method: "POST", body: JSON.stringify({ content, mode }) }
+    ),
+
+  getWorkspaceStats: () =>
+    apiFetch<{
+      documents: { total: number; ready: number; processing: number; failed: number };
+      chunks: { knowledge_docs: number; meetings_estimated: number; total_estimated: number };
+      vectors: { namespaces: number; estimated_total: number };
+      meetings: { completed: number };
+    }>("/api/workspace/stats"),
+
   // Health
   healthCheck: () => apiFetch<{ status: string }>("/api/health"),
 };

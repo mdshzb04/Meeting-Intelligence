@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.exceptions import register_exception_handlers
-from app.api import health, meetings, chat, tasks, decisions, auth, integrations, knowledge
+from app.api import health, meetings, chat, tasks, decisions, auth, integrations, knowledge, workspace
 
 # Configure logging
 logging.basicConfig(
@@ -177,3 +177,4 @@ app.include_router(decisions.router, prefix="/api", tags=["Decisions"])
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
 app.include_router(integrations.router, prefix="/api", tags=["Integrations"])
 app.include_router(knowledge.router, prefix="/api", tags=["Knowledge"])
+app.include_router(workspace.router, prefix="/api", tags=["Workspace"])

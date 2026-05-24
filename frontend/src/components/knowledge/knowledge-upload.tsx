@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const ACCEPT = ".pdf,.txt,.md,.docx";
+const ACCEPT = ".pdf,.txt,.md,.docx,.mp3,.zip";
 
 type FileResult = { filename: string; status: string; reason?: string };
 
@@ -83,7 +83,7 @@ export function KnowledgeUpload() {
           {upload.isPending ? "Uploading…" : "Upload documents"}
         </span>
         <span className="text-[11px] text-muted-foreground">
-          PDF, TXT, MD, or DOCX — select multiple files
+          PDF, TXT, MD, DOCX, MP3, ZIP — select multiple files
         </span>
       </button>
 

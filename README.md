@@ -96,7 +96,6 @@ pip install -r requirements.txt
 # Copy env vars (backend reads from its own .env)
 cp ../.env .env
 
-uvicorn app.main:app --reload --port 8000
 ```
 
 ### 5. Start the frontend
