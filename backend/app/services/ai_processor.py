@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from app.config import get_settings
 from app.exceptions import AIServiceError
+from app.services.traceplane_client import traced, record_chat_usage
 
 logger = logging.getLogger(__name__)
 
@@ -80,21 +81,24 @@ async def analyze_meeting(transcript: str) -> dict:
 
         logger.info(f"Analyzing meeting transcript ({len(truncated)} chars)")
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": f"Analyze this meeting transcript:\n\n{truncated}",
-                },
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.3,
-            max_tokens=4000,
-        )
-
-        result_text = response.choices[0].message.content
+        with traced("meeting-analyzer", model="gpt-4o-mini") as span:
+            span.set_input(truncated[:2000])
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": f"Analyze this meeting transcript:\n\n{truncated}",
+                    },
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=4000,
+            )
+            result_text = response.choices[0].message.content
+            record_chat_usage(span, response, "gpt-4o-mini")
+            span.set_output((result_text or "")[:2000])
         result = json.loads(result_text)
 
         # Validate expected fields
@@ -131,20 +135,23 @@ def generate_meeting_title(transcript: str) -> str:
         # Use just the first 500 chars for title generation
         snippet = transcript[:500]
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Generate a short, descriptive meeting title (max 8 words) based on the transcript snippet. Return ONLY the title text, no quotes or punctuation.",
-                },
-                {"role": "user", "content": snippet},
-            ],
-            temperature=0.5,
-            max_tokens=30,
-        )
-
-        title = response.choices[0].message.content.strip().strip('"').strip("'")
+        with traced("meeting-title-generator", model="gpt-4o-mini") as span:
+            span.set_input(snippet)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Generate a short, descriptive meeting title (max 8 words) based on the transcript snippet. Return ONLY the title text, no quotes or punctuation.",
+                    },
+                    {"role": "user", "content": snippet},
+                ],
+                temperature=0.5,
+                max_tokens=30,
+            )
+            title = response.choices[0].message.content.strip().strip('"').strip("'")
+            record_chat_usage(span, response, "gpt-4o-mini")
+            span.set_output(title)
         return title[:255]  # Ensure it fits DB column
 
     except Exception as e:

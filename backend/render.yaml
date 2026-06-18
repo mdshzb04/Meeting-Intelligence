@@ -19,3 +19,7 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: TRACEPLANE_API_KEY
+        sync: false
+      - key: TRACEPLANE_BASE_URL
+        value: https://traceplane.shazeb.site/api/v1

@@ -9,8 +9,6 @@ import asyncpg
 from app.config import get_settings
 from app.database import get_db
 from app.repositories import meetings as meetings_repo
-from app.repositories import integrations as integrations_repo
-from app.services.slack_webhook import send_slack_message, format_meeting_complete_message
 from app.repositories import transcripts as transcripts_repo
 from app.repositories import tasks as tasks_repo
 from app.repositories import decisions as decisions_repo
@@ -18,10 +16,6 @@ from app.services.transcription import transcribe_audio
 from app.services.ai_processor import analyze_meeting, generate_meeting_title
 from app.services.embedding import chunk_text, generate_embeddings
 from app.services.pinecone_service import upsert_vectors, delete_meeting_vectors
-from app.services.email_service import (
-    send_meeting_processed_email,
-    send_transcript_ready_email,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -73,18 +67,6 @@ async def process_audio_meeting(
                 raise ValueError("Transcription produced no usable text")
 
             await transcripts_repo.create_transcript(pool, meeting_id, transcript_text)
-
-            # Notify user that raw transcript is available (non-blocking)
-            row = await meetings_repo.get_meeting_internal(pool, meeting_id)
-            if row and row.get("user_id"):
-                from app.repositories import users as users_repo
-                user = await users_repo.get_user_by_id(pool, row["user_id"])
-                if user:
-                    send_transcript_ready_email(
-                        to=user["email"],
-                        user_name=user.get("name") or "there",
-                        meeting_title=row.get("title") or "Your Meeting",
-                    )
 
             if not title:
                 generated_title = generate_meeting_title(transcript_text)
@@ -204,95 +186,6 @@ async def _process_text_meeting(
         "Meeting processing completed",
         extra={"meeting_title": meeting.get("title") if meeting else None},
     )
-
-    await _notify_slack_meeting_complete(
-        pool,
-        meeting_id,
-        meeting,
-        action_items_count=len(action_items),
-        decisions_count=len(decisions),
-    )
-
-    # Send meeting-processed email (non-blocking, best-effort)
-    await _notify_email_meeting_complete(
-        pool,
-        meeting_id,
-        meeting,
-        action_items_count=len(action_items),
-        decisions_count=len(decisions),
-    )
-
-
-async def _notify_slack_meeting_complete(
-    pool: asyncpg.Pool,
-    meeting_id: str,
-    meeting: dict | None,
-    *,
-    action_items_count: int,
-    decisions_count: int,
-) -> None:
-    if not meeting:
-        return
-    row = await meetings_repo.get_meeting_internal(pool, meeting_id)
-    if not row or not row.get("user_id"):
-        return
-    url = await integrations_repo.get_slack_webhook(pool, row["user_id"])
-    if not url:
-        return
-
-    title = meeting.get("title") or "Meeting"
-    summary_generated = bool((meeting.get("summary") or "").strip())
-
-    text = format_meeting_complete_message(
-        title,
-        summary_generated=summary_generated,
-        action_items_count=action_items_count,
-        decisions_count=decisions_count,
-    )
-
-    try:
-        await send_slack_message(url, text)
-    except Exception as e:
-        logger.warning(
-            "Slack notification failed",
-            extra={"meeting_id": meeting_id, "error": str(e)},
-        )
-
-
-async def _notify_email_meeting_complete(
-    pool: asyncpg.Pool,
-    meeting_id: str,
-    meeting: dict | None,
-    *,
-    action_items_count: int,
-    decisions_count: int,
-) -> None:
-    """Resolve user email from DB and fire a non-blocking email notification."""
-    if not meeting:
-        return
-    row = await meetings_repo.get_meeting_internal(pool, meeting_id)
-    if not row or not row.get("user_id"):
-        return
-    try:
-        from app.repositories import users as users_repo
-        user = await users_repo.get_user_by_id(pool, row["user_id"])
-        if not user:
-            return
-        summary = (meeting.get("summary") or "").strip()
-        summary_snippet = summary[:200] + ("…" if len(summary) > 200 else "") if summary else ""
-        send_meeting_processed_email(
-            to=user["email"],
-            user_name=user.get("name") or "there",
-            meeting_title=meeting.get("title") or "Your Meeting",
-            summary_snippet=summary_snippet,
-            action_items_count=action_items_count,
-            decisions_count=decisions_count,
-        )
-    except Exception as e:
-        logger.warning(
-            "Email notification scheduling failed",
-            extra={"meeting_id": meeting_id, "error": str(e)},
-        )
 
 
 async def _clear_derivatives(pool: asyncpg.Pool, meeting_id: str) -> None:

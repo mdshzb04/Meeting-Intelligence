@@ -11,7 +11,7 @@ from app.exceptions import NotFoundError, ValidationError
 from app.schemas.meetings import MeetingCreate, MeetingResponse, MeetingListResult, MeetingListResponse
 from app.repositories import meetings as meetings_repo
 from app.repositories import transcripts as transcripts_repo
-from app.services.transcription import validate_audio_file
+from app.services.transcription import validate_audio_file, transcribe_audio
 from app.services.pinecone_service import delete_meeting_vectors
 from app.services.meeting_processor import (
     process_text_meeting,
@@ -170,6 +170,19 @@ async def delete_meeting(
 
     await meetings_repo.delete_meeting(pool, meeting_id, user["id"])
     return {"message": "Meeting deleted successfully"}
+
+
+@router.post("/meetings/transcribe-chunk")
+async def transcribe_chunk(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
+    """Transcribe a small chunk of audio in real-time."""
+    if not file.filename:
+        file.filename = "chunk.webm"
+    file_content = await file.read()
+    text = await transcribe_audio(file_content, file.filename)
+    return {"text": text}
 
 
 @router.get("/meetings/{meeting_id}/transcript")

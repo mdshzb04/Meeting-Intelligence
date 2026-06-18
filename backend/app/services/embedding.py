@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from app.config import get_settings
 from app.exceptions import AIServiceError
+from app.services.traceplane_client import traced, record_embedding_usage
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +55,16 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
         logger.info(f"Generating embeddings for {len(texts)} chunks")
 
         dims = settings.EMBEDDING_DIMENSIONS
-        response = client.embeddings.create(
-            model=EMBEDDING_MODEL,
-            input=texts,
-            dimensions=dims,
-        )
-
-        embeddings = [item.embedding for item in response.data]
+        with traced("embedding-generator", model=EMBEDDING_MODEL) as span:
+            span.set_input(f"{len(texts)} chunks")
+            response = client.embeddings.create(
+                model=EMBEDDING_MODEL,
+                input=texts,
+                dimensions=dims,
+            )
+            embeddings = [item.embedding for item in response.data]
+            record_embedding_usage(span, response, EMBEDDING_MODEL)
+            span.set_output(f"{len(embeddings)} embeddings")
         logger.info(f"Generated {len(embeddings)} embeddings ({dims}d)")
         return embeddings
 

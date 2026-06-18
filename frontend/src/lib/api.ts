@@ -206,6 +206,15 @@ export const api = {
     });
   },
 
+  transcribeChunk: (file: Blob) => {
+    const formData = new FormData();
+    formData.append("file", file, "chunk.webm");
+    return apiFetch<{ text: string }>("/api/meetings/transcribe-chunk", {
+      method: "POST",
+      body: formData,
+    });
+  },
+
   listMeetings: (search?: string, limit = 50, offset = 0) =>
     apiFetch<MeetingListResult>("/api/meetings", {
       params: {
@@ -257,21 +266,12 @@ export const api = {
     }),
 
   // Integrations
-  getSlackIntegration: () =>
-    apiFetch<{ configured: boolean; webhook_url_masked: string | null }>(
-      "/api/integrations/slack"
-    ),
-
-  updateSlackIntegration: (webhook_url: string | null) =>
-    apiFetch<{ configured: boolean; webhook_url_masked: string | null }>(
-      "/api/integrations/slack",
-      { method: "PUT", body: JSON.stringify({ webhook_url }) }
-    ),
-
-  testSlackIntegration: () =>
-    apiFetch<{ message: string }>("/api/integrations/slack/test", {
-      method: "POST",
-    }),
+  getTraceplaneIntegration: () =>
+    apiFetch<{
+      configured: boolean;
+      base_url: string;
+      dashboard_url: string;
+    }>("/api/integrations/traceplane"),
 
   // Knowledge base
   listKnowledgeDocuments: () =>

@@ -30,14 +30,6 @@ async def register(body: RegisterRequest, pool=Depends(get_db)):
     )
     token = create_access_token(user["id"], user["email"])
     logger.info("User registered", extra={"email": user["email"]})
-
-    # Fire welcome email — non-blocking, best-effort
-    try:
-        from app.services.email_service import send_welcome_email
-        send_welcome_email(to=user["email"], user_name=user.get("name") or "there")
-    except Exception as _exc:  # noqa: BLE001
-        logger.warning("Welcome email scheduling failed: %s", _exc)
-
     return AuthResponse(access_token=token, user=_user_payload(user))
 
 

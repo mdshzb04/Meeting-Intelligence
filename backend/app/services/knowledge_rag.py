@@ -12,6 +12,7 @@ from app.exceptions import AIServiceError
 from app.repositories import knowledge as knowledge_repo
 from app.services.embedding import generate_single_embedding
 from app.services.pinecone_service import query_vectors_across_knowledge
+from app.services.traceplane_client import traced, record_chat_usage
 
 logger = logging.getLogger(__name__)
 
@@ -99,15 +100,18 @@ async def chat_with_knowledge(
             messages.append({"role": msg["role"], "content": msg["content"]})
         messages.append({"role": "user", "content": user_query})
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0.2,
-            max_tokens=2000,
-        )
-
-        raw = response.choices[0].message.content
+        with traced("knowledge-chat", model="gpt-4o-mini") as span:
+            span.set_input(user_query)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+                max_tokens=2000,
+            )
+            raw = response.choices[0].message.content
+            record_chat_usage(span, response, "gpt-4o-mini")
+            span.set_output((raw or "")[:2000])
         parsed = json.loads(raw)
         answer = parsed.get("answer", "").strip()
         refs = parsed.get("citation_refs", [])

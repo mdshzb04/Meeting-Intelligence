@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Plug,
+  Activity,
   BookOpen,
 } from "lucide-react";
 import { MeetingMindLogo } from "@/components/icons/meetingmind-logo";
@@ -124,8 +124,8 @@ export function Sidebar() {
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           )}
         >
-          <Plug className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Integration</span>}
+          <Activity className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Observability</span>}
         </Link>
 
         {workspaceNav.map((item) => {
