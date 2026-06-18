@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Activity,
   BookOpen,
 } from "lucide-react";
 import { MeetingMindLogo } from "@/components/icons/meetingmind-logo";
@@ -113,19 +112,6 @@ export function Sidebar() {
         >
           <BookOpen className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Knowledge Base</span>}
-        </Link>
-
-        <Link
-          href="/integration"
-          className={cn(
-            "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
-            pathname === "/integration"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          )}
-        >
-          <Activity className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Observability</span>}
         </Link>
 
         {workspaceNav.map((item) => {

@@ -265,14 +265,6 @@ export const api = {
       body: JSON.stringify(updates),
     }),
 
-  // Integrations
-  getTraceplaneIntegration: () =>
-    apiFetch<{
-      configured: boolean;
-      base_url: string;
-      dashboard_url: string;
-    }>("/api/integrations/traceplane"),
-
   // Knowledge base
   listKnowledgeDocuments: () =>
     apiFetch<KnowledgeDocumentList>("/api/knowledge/documents"),
