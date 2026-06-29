@@ -1,5 +1,6 @@
 """RAG chat with full workspace memory and citations."""
 
+import asyncio
 import json
 import logging
 from typing import List, Tuple
@@ -69,7 +70,8 @@ async def chat_with_memory(
 
         with traced("meeting-chat", model="gpt-4o-mini") as span:
             span.set_input(user_query)
-            response = client.chat.completions.create(
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
                 model="gpt-4o-mini",
                 messages=messages,
                 response_format={"type": "json_object"},

@@ -8,8 +8,11 @@ export async function POST(request: NextRequest) {
       method: "POST",
       body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(120_000),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({
+      error: res.ok ? "Invalid response" : `Backend error (${res.status})`,
+    }));
     return NextResponse.json(data, { status: res.status });
   } catch {
     return NextResponse.json({ error: "Backend service unavailable" }, { status: 503 });
