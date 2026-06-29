@@ -1,5 +1,6 @@
 """OpenAI embedding service for transcript chunks."""
 
+import asyncio
 import logging
 from typing import List
 from openai import OpenAI
@@ -57,7 +58,8 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
         dims = settings.EMBEDDING_DIMENSIONS
         with traced("embedding-generator", model=EMBEDDING_MODEL) as span:
             span.set_input(f"{len(texts)} chunks")
-            response = client.embeddings.create(
+            response = await asyncio.to_thread(
+                client.embeddings.with_options(timeout=60.0).create,
                 model=EMBEDDING_MODEL,
                 input=texts,
                 dimensions=dims,
