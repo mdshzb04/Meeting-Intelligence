@@ -1,6 +1,5 @@
 """Application configuration via environment variables."""
 
-from typing import Optional
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -34,10 +33,6 @@ class Settings(BaseSettings):
 
     JWT_SECRET: str = "change-me-in-production"
     JWT_EXPIRE_HOURS: int = 168
-
-    # Traceplane observability (optional — tracing is skipped when unset)
-    TRACEPLANE_API_KEY: Optional[str] = None
-    TRACEPLANE_BASE_URL: str = "https://traceplane.shazeb.site/api/v1"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

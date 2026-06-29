@@ -11,7 +11,6 @@ import asyncpg
 from app.config import get_settings
 from app.exceptions import AIServiceError
 from app.services.memory_context import build_memory_context
-from app.services.traceplane_client import traced, record_chat_usage
 
 logger = logging.getLogger(__name__)
 
@@ -68,19 +67,15 @@ async def chat_with_memory(
 
         messages.append({"role": "user", "content": user_query})
 
-        with traced("meeting-chat", model="gpt-4o-mini") as span:
-            span.set_input(user_query)
-            response = await asyncio.to_thread(
-                client.chat.completions.create,
-                model="gpt-4o-mini",
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.2,
-                max_tokens=2000,
-            )
-            raw = response.choices[0].message.content
-            record_chat_usage(span, response, "gpt-4o-mini")
-            span.set_output((raw or "")[:2000])
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model="gpt-4o-mini",
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.2,
+            max_tokens=2000,
+        )
+        raw = response.choices[0].message.content
         parsed = json.loads(raw)
         answer = parsed.get("answer", "").strip()
         refs = parsed.get("citation_refs", [])

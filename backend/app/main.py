@@ -9,8 +9,7 @@ from fastapi.responses import HTMLResponse
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.exceptions import register_exception_handlers
-from app.api import health, meetings, chat, tasks, decisions, auth, integrations, knowledge, workspace
-from app.services.traceplane_client import setup_traceplane
+from app.api import health, meetings, chat, tasks, decisions, auth, knowledge, workspace
 
 # Configure logging
 logging.basicConfig(
@@ -25,7 +24,6 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle."""
     settings = get_settings()
     logger.info("Starting Meeting Intelligence API...")
-    setup_traceplane(settings.TRACEPLANE_API_KEY, settings.TRACEPLANE_BASE_URL)
 
     # Initialize database
     await init_db(settings.DATABASE_URL)
@@ -177,6 +175,5 @@ app.include_router(chat.router, prefix="/api", tags=["Chat"])
 app.include_router(tasks.router, prefix="/api", tags=["Tasks"])
 app.include_router(decisions.router, prefix="/api", tags=["Decisions"])
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
-app.include_router(integrations.router, prefix="/api", tags=["Integrations"])
 app.include_router(knowledge.router, prefix="/api", tags=["Knowledge"])
 app.include_router(workspace.router, prefix="/api", tags=["Workspace"])

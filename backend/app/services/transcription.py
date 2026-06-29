@@ -8,7 +8,6 @@ from openai import OpenAI
 
 from app.config import get_settings
 from app.exceptions import AIServiceError
-from app.services.traceplane_client import traced
 
 logger = logging.getLogger(__name__)
 
@@ -51,19 +50,15 @@ async def transcribe_audio(file_content: bytes, filename: str) -> str:
 
         logger.info(f"Transcribing audio: {filename} ({len(file_content)} bytes)")
 
-        with traced("audio-transcriber", model="whisper-1") as span:
-            span.set_input(f"audio:{filename} ({len(file_content)} bytes)")
+        def _call_whisper() -> str:
+            with open(tmp_path, "rb") as audio_file:
+                return client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="text",
+                )
 
-            def _call_whisper() -> str:
-                with open(tmp_path, "rb") as audio_file:
-                    return client.audio.transcriptions.create(
-                        model="whisper-1",
-                        file=audio_file,
-                        response_format="text",
-                    )
-
-            transcription = await asyncio.to_thread(_call_whisper)
-            span.set_output((transcription or "")[:2000])
+        transcription = await asyncio.to_thread(_call_whisper)
 
         logger.info(f"Transcription complete: {len(transcription)} chars")
         return transcription
