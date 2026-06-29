@@ -46,7 +46,7 @@ async def chat_with_memory(
 ) -> Tuple[str, List[dict]]:
     """RAG chat across all meetings. Returns (answer_text, citations)."""
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=120.0)
 
     try:
         context, sources = await build_memory_context(

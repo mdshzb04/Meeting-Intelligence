@@ -45,7 +45,7 @@ async def chat_with_knowledge(
 ) -> Tuple[str, List[dict]]:
     """RAG chat across indexed knowledge documents. Returns (answer, citations)."""
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=120.0)
 
     try:
         documents = await knowledge_repo.list_documents(pool, user_id)

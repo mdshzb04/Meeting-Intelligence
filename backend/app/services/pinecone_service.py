@@ -143,12 +143,16 @@ async def query_vectors(
     try:
         results = await asyncio.to_thread(_do_query)
 
+        raw_matches = getattr(results, "matches", None) or []
         matches = []
-        for match in results.get("matches", []):
+        for match in raw_matches:
+            meta = getattr(match, "metadata", None) or {}
+            if not isinstance(meta, dict):
+                meta = dict(meta) if meta else {}
             matches.append({
-                "text": match.get("metadata", {}).get("text", ""),
-                "score": match.get("score", 0.0),
-                "id": match.get("id", ""),
+                "text": meta.get("text", ""),
+                "score": getattr(match, "score", 0.0) or 0.0,
+                "id": getattr(match, "id", "") or "",
                 "meeting_id": meeting_id,
             })
 

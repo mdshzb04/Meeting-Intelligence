@@ -37,7 +37,7 @@ async def transcribe_audio(file_content: bytes, filename: str) -> str:
     Temp files are cleaned up immediately after use (safe for Render).
     """
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=180.0)
 
     # Write to temp file (cleaned up automatically)
     tmp_path = None
@@ -56,9 +56,7 @@ async def transcribe_audio(file_content: bytes, filename: str) -> str:
 
             def _call_whisper() -> str:
                 with open(tmp_path, "rb") as audio_file:
-                    return client.audio.transcriptions.with_options(
-                        timeout=180.0
-                    ).create(
+                    return client.audio.transcriptions.create(
                         model="whisper-1",
                         file=audio_file,
                         response_format="text",

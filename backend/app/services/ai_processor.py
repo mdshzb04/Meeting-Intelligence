@@ -71,7 +71,7 @@ async def analyze_meeting(transcript: str) -> dict:
     Returns dict with: summary, highlights, next_steps, action_items, decisions
     """
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=120.0)
 
     try:
         # Truncate very long transcripts to stay within token limits
@@ -85,7 +85,7 @@ async def analyze_meeting(transcript: str) -> dict:
         with traced("meeting-analyzer", model="gpt-4o-mini") as span:
             span.set_input(truncated[:2000])
             response = await asyncio.to_thread(
-                client.chat.completions.with_options(timeout=120.0).create,
+                client.chat.completions.create,
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
@@ -131,7 +131,7 @@ async def analyze_meeting(transcript: str) -> dict:
 def generate_meeting_title(transcript: str) -> str:
     """Generate a short meeting title from the first few lines of the transcript."""
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=60.0)
 
     try:
         # Use just the first 500 chars for title generation
@@ -139,7 +139,7 @@ def generate_meeting_title(transcript: str) -> str:
 
         with traced("meeting-title-generator", model="gpt-4o-mini") as span:
             span.set_input(snippet)
-            response = client.chat.completions.with_options(timeout=60.0).create(
+            response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {

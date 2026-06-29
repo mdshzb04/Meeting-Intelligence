@@ -50,7 +50,7 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
     Batches are handled automatically by the API.
     """
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=60.0)
 
     try:
         logger.info(f"Generating embeddings for {len(texts)} chunks")
@@ -59,7 +59,7 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
         with traced("embedding-generator", model=EMBEDDING_MODEL) as span:
             span.set_input(f"{len(texts)} chunks")
             response = await asyncio.to_thread(
-                client.embeddings.with_options(timeout=60.0).create,
+                client.embeddings.create,
                 model=EMBEDDING_MODEL,
                 input=texts,
                 dimensions=dims,

@@ -50,7 +50,7 @@ async def global_workspace_chat(
 ) -> Tuple[str, List[dict]]:
     """Unified RAG chat across meetings and/or knowledge docs."""
     settings = get_settings()
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=120.0)
 
     sources: List[dict] = []
     query_embedding = await generate_single_embedding(user_query)
