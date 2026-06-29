@@ -69,7 +69,9 @@ async def process_audio_meeting(
             await transcripts_repo.create_transcript(pool, meeting_id, transcript_text)
 
             if not title:
-                generated_title = generate_meeting_title(transcript_text)
+                generated_title = await asyncio.to_thread(
+                    generate_meeting_title, transcript_text
+                )
                 await meetings_repo.update_meeting_internal(
                     pool, meeting_id, title=generated_title
                 )

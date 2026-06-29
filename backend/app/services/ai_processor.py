@@ -1,5 +1,6 @@
 """OpenAI GPT service for meeting analysis and structured extraction."""
 
+import asyncio
 import json
 import logging
 from openai import OpenAI
@@ -83,7 +84,8 @@ async def analyze_meeting(transcript: str) -> dict:
 
         with traced("meeting-analyzer", model="gpt-4o-mini") as span:
             span.set_input(truncated[:2000])
-            response = client.chat.completions.create(
+            response = await asyncio.to_thread(
+                client.chat.completions.with_options(timeout=120.0).create,
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
@@ -137,7 +139,7 @@ def generate_meeting_title(transcript: str) -> str:
 
         with traced("meeting-title-generator", model="gpt-4o-mini") as span:
             span.set_input(snippet)
-            response = client.chat.completions.create(
+            response = client.chat.completions.with_options(timeout=60.0).create(
                 model="gpt-4o-mini",
                 messages=[
                     {

@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     CHUNK_SIZE_TOKENS: int = 500
     CHUNK_OVERLAP_TOKENS: int = 50
 
-    # Must match your Pinecone index dimension (threadline index uses 1024)
-    EMBEDDING_DIMENSIONS: int = 1024
+    # Must match your Pinecone index dimension. text-embedding-3-small defaults to 1536.
+    EMBEDDING_DIMENSIONS: int = 1536
 
     # Max seconds for background meeting processing (AI + embeddings)
     MEETING_PROCESSING_TIMEOUT_SECONDS: int = 600
