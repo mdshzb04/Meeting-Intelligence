@@ -6,7 +6,7 @@ __pycache__/
 *.so
 .Python
 env/
-graphify-out
+/home/mohammed-shazeb/Desktop/MM/Meeting-Intelligence/graphify-out
 venv/
 .venv/
 .env.example
