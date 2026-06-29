@@ -23,21 +23,25 @@ function GlobalChatPanel({ mode }: { mode: Mode }) {
   const [messages, setMessages] = useState<GlobalMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => { setError(null); setMessages([]); }, [mode]);
 
   const send = async () => {
     const q = input.trim();
     if (!q || loading) return;
     setInput("");
+    setError(null);
     setMessages((m) => [...m, { role: "user", content: q }]);
     setLoading(true);
     try {
       const res = await api.globalChat(q, mode);
       setMessages((m) => [...m, { role: "assistant", content: res.answer, citations: res.citations }]);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error";
+      const msg = e instanceof Error ? e.message : "Chat request failed";
+      setError(msg);
       setMessages((m) => [...m, { role: "assistant", content: `Error: ${msg}` }]);
     } finally {
       setLoading(false);
@@ -46,6 +50,11 @@ function GlobalChatPanel({ mode }: { mode: Mode }) {
 
   return (
     <div className="flex flex-col h-[520px] rounded-lg border border-border bg-card">
+      {error && (
+        <div className="px-4 py-2 border-b border-destructive/30 bg-destructive/10">
+          <p className="text-[12px] text-destructive">{error}</p>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <p className="text-[13px] text-muted-foreground text-center mt-8">

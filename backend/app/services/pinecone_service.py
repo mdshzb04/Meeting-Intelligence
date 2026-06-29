@@ -1,5 +1,6 @@
 """Pinecone vector storage service."""
 
+import asyncio
 import logging
 from typing import List, Optional
 from pinecone import Pinecone
@@ -56,14 +57,15 @@ async def upsert_vectors(
                 },
             })
 
-        # Upsert in batches of 100
+        namespace = f"meeting_{meeting_id}"
         batch_size = 100
-        for i in range(0, len(vectors), batch_size):
-            batch = vectors[i : i + batch_size]
-            index.upsert(
-                vectors=batch,
-                namespace=f"meeting_{meeting_id}",
-            )
+
+        def _upsert_all() -> None:
+            for i in range(0, len(vectors), batch_size):
+                batch = vectors[i : i + batch_size]
+                index.upsert(vectors=batch, namespace=namespace)
+
+        await asyncio.to_thread(_upsert_all)
 
         logger.info(f"Upserted {len(vectors)} vectors for meeting {meeting_id}")
 
@@ -85,14 +87,17 @@ async def query_vectors_across_meetings(
     index = _get_index()
     namespaces = [f"meeting_{mid}" for mid in meeting_ids]
 
-    try:
-        results = index.query_namespaces(
+    def _do_query():
+        return index.query_namespaces(
             vector=query_embedding,
             namespaces=namespaces,
             metric=metric,
             top_k=max(2, top_k // max(len(namespaces), 1)),
             include_metadata=True,
         )
+
+    try:
+        results = await asyncio.to_thread(_do_query)
 
         matches = []
         for match in results.matches:
@@ -127,13 +132,16 @@ async def query_vectors(
     """
     index = _get_index()
 
-    try:
-        results = index.query(
+    def _do_query():
+        return index.query(
             vector=query_embedding,
             top_k=top_k,
             namespace=f"meeting_{meeting_id}",
             include_metadata=True,
         )
+
+    try:
+        results = await asyncio.to_thread(_do_query)
 
         matches = []
         for match in results.get("matches", []):
@@ -159,7 +167,9 @@ async def delete_meeting_vectors(meeting_id: str) -> None:
     index = _get_index()
 
     try:
-        index.delete(delete_all=True, namespace=f"meeting_{meeting_id}")
+        await asyncio.to_thread(
+            index.delete, delete_all=True, namespace=f"meeting_{meeting_id}"
+        )
         logger.info(f"Deleted vectors for meeting {meeting_id}")
     except Exception as e:
         logger.warning(f"Failed to delete vectors for meeting {meeting_id}: {e}")
@@ -186,10 +196,15 @@ async def upsert_knowledge_vectors(
                 },
             })
 
+        namespace = f"kb_{document_id}"
         batch_size = 100
-        for i in range(0, len(vectors), batch_size):
-            batch = vectors[i : i + batch_size]
-            index.upsert(vectors=batch, namespace=f"kb_{document_id}")
+
+        def _upsert_all() -> None:
+            for i in range(0, len(vectors), batch_size):
+                batch = vectors[i : i + batch_size]
+                index.upsert(vectors=batch, namespace=namespace)
+
+        await asyncio.to_thread(_upsert_all)
 
         logger.info(f"Upserted {len(vectors)} KB vectors for document {document_id}")
 
@@ -211,14 +226,17 @@ async def query_vectors_across_knowledge(
     index = _get_index()
     namespaces = [f"kb_{did}" for did in document_ids]
 
-    try:
-        results = index.query_namespaces(
+    def _do_query():
+        return index.query_namespaces(
             vector=query_embedding,
             namespaces=namespaces,
             metric=metric,
             top_k=max(2, top_k // max(len(namespaces), 1)),
             include_metadata=True,
         )
+
+    try:
+        results = await asyncio.to_thread(_do_query)
 
         matches = []
         for match in results.matches:
@@ -247,7 +265,9 @@ async def delete_knowledge_vectors(document_id: str) -> None:
     index = _get_index()
 
     try:
-        index.delete(delete_all=True, namespace=f"kb_{document_id}")
+        await asyncio.to_thread(
+            index.delete, delete_all=True, namespace=f"kb_{document_id}"
+        )
         logger.info(f"Deleted KB vectors for document {document_id}")
     except Exception as e:
         logger.warning(f"Failed to delete KB vectors for document {document_id}: {e}")
