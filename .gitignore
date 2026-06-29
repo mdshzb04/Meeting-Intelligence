@@ -6,6 +6,7 @@ __pycache__/
 *.so
 .Python
 env/
+graphify-out
 venv/
 .venv/
 .env.example
