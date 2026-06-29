@@ -191,6 +191,10 @@ Open [http://localhost:3000](http://localhost:3000)
 | `GET` | `/api/meetings/:id/decisions` | Get decisions |
 | `PATCH` | `/api/decisions/:id` | Update decision |
 
+
+<img width="1849" height="965" alt="image" src="https://github.com/user-attachments/assets/2146ab49-f38e-4f7c-aee9-9d46d6c4ae3e" />
+
+
 ## Architecture Notes
 
 - **API Proxy Pattern**: Frontend calls its own `/api/*` routes which proxy to FastAPI. This eliminates CORS issues and hides the backend URL.
